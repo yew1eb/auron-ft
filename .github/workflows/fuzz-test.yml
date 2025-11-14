@@ -20,7 +20,7 @@ on:
         required: false
         type: string
       scala-version:
-        default: '2.12.17'
+        default: '2.12.18'
         required: false
         type: string
       scala-binary-version:
@@ -83,24 +83,24 @@ jobs:
         id: get-auron-spark-cache
         uses: actions/cache/restore@v4
         with:
-          path: auron-spark-${{inputs.spark-binary-version}}-*.jar
-          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          path: auron-spark-${{inputs.spark-binary-version}}_*.jar
+          key: auron-spark${{ inputs.spark-binary-version }}_${{ steps.get-date.outputs.date }}
       - name: Build auron
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cd auron
-          mvn clean package -Pspark-${{ inputs.spark-binary-version }} -Prelease \
+          ./auron-build.sh --release --sparkver ${{ inputs.spark-binary-version }} --scalaver ${{ inputs.scala-binary-version }} \
           -Dmaven.source.skip -DskipTests -Dscalafix.skip=true -Dscalafmt.skip=true -Dcheckstyle.skip=true -Dcheckstyle.skip=true \
           -Dspotbugs.skip=true -Drat.skip=true -Dmaven.javadoc.skip=true 
 
-          cp target/auron-spark-${{inputs.spark-binary-version}}-*.jar ..
+          cp target/auron-spark-${{inputs.spark-binary-version}}_*.jar ..
       - name: Cached auron lib
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: auron-spark-${{inputs.spark-binary-version}}-*.jar
-          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          path: auron-spark-${{inputs.spark-binary-version}}_*.jar
+          key: auron-spark${{ inputs.spark-binary-version }}_${{ steps.get-date.outputs.date }}
       - name: Setup Spark
         uses: ./.github/actions/setup-spark
         with:
@@ -110,7 +110,7 @@ jobs:
         uses: ./.github/actions/run-fuzz-test
         with:
           native-engine: auron
-          native-engine-jar: auron-spark-${{inputs.spark-binary-version}}-*.jar
+          native-engine-jar: auron-spark-${{inputs.spark-binary-version}}_*.jar
       - name: Report fuzz test result of auron
         uses: ./.github/actions/report-fuzz-test
         with:
