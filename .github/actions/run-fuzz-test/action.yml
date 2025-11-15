@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         cp ${{ inputs.native-engine-jar }} $SPARK_HOME/jars
-    - name: Generate data
+    - name: Generating data
       shell: bash
       run: |
         FUZZ_TEST_JAR=$(ls auron-fuzz-testing-*.jar)
@@ -41,7 +41,7 @@ runs:
           --class org.apache.auron.fuzz.Main \
           $FUZZ_TEST_JAR \
           data $OPTS
-    - name: Generate queries
+    - name: Generating queries
       shell: bash
       run: |
         FUZZ_TEST_JAR=$(ls auron-fuzz-testing-*.jar)
@@ -50,7 +50,7 @@ runs:
           --class org.apache.auron.fuzz.Main \
           $FUZZ_TEST_JAR \
           queries --num-files=2 --num-queries=2000
-    - name: Run queries
+    - name: Running fuzz tests
       shell: bash
       run: |
         FUZZ_TEST_JAR=$(ls auron-fuzz-testing-*.jar)

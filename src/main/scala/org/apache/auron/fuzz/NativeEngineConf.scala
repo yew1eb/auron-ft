@@ -11,10 +11,10 @@ class NativeEngineConf(engineType: NativeEngineType) {
   def sparkConf: SparkConf = {
     val conf = new SparkConf()
     engineType match {
-      case NativeEngineType.auron =>
+      case NativeEngineType.AURON =>
         conf.setIfMissing("spark.auron.enable", "true")
-          .setIfMissing("spark.sql.extensions", "org.apache.spark.sql.auron.auronSparkSessionExtension")
-          .setIfMissing("spark.shuffle.manager", "org.apache.spark.sql.execution.auron.shuffle.auronShuffleManager")
+          .setIfMissing("spark.sql.extensions", "org.apache.spark.sql.auron.AuronSparkSessionExtension")
+          .setIfMissing("spark.shuffle.manager", "org.apache.spark.sql.execution.auron.shuffle.AuronShuffleManager")
           .setIfMissing("spark.executor.memory", "3g")
           .setIfMissing("spark.memory.offHeap.enabled", "false")
       case NativeEngineType.COMET =>
@@ -37,7 +37,7 @@ class NativeEngineConf(engineType: NativeEngineType) {
 
   def disableNativeEngine(spark: SparkSession): Unit = {
     engineType match {
-      case NativeEngineType.auron =>
+      case NativeEngineType.AURON =>
         spark.conf.set("spark.auron.enable", "false")
       case NativeEngineType.COMET =>
         spark.conf.set("spark.comet.enabled", "false")
@@ -48,7 +48,7 @@ class NativeEngineConf(engineType: NativeEngineType) {
 
   def enableNativeEngine(spark: SparkSession): Unit = {
     engineType match {
-      case NativeEngineType.auron =>
+      case NativeEngineType.AURON =>
         spark.conf.set("spark.auron.enable", "true")
       case NativeEngineType.COMET =>
         spark.conf.set("spark.comet.enabled", "true")
@@ -67,7 +67,7 @@ object NativeEngineConf {
 
 object NativeEngineType extends Enumeration {
   type NativeEngineType = Value
-  val auron: Value = Value("auron")
+  val AURON: Value = Value("auron")
   val COMET: Value = Value("comet")
   val GLUTEN: Value = Value("gluten")
 }
