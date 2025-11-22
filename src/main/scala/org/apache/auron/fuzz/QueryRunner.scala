@@ -19,7 +19,7 @@
 
 package org.apache.auron.fuzz
 
-import org.apache.auron.fuzz.QueryComparison.showPlans
+import org.apache.auron.fuzz.QueryComparison.{showPlans, showResult}
 import org.apache.auron.fuzz.old.NativeEngineConf
 import org.apache.spark.sql.{Row, SparkSession}
 
@@ -48,8 +48,8 @@ object QueryRunner {
 
     var queryCount = 0
     var invalidQueryCount = 0
-    var cometFailureCount = 0
-    var cometSuccessCount = 0
+    var naitveFailureCount = 0
+    var naitveSuccessCount = 0
 
     val w = createOutputMdFile()
 
@@ -82,31 +82,32 @@ object QueryRunner {
             try {
               nativeEngineConf.enableNativeEngine(spark)
               val df = spark.sql(sql)
-              val cometRows = df.collect()
-              val cometPlan = df.queryExecution.executedPlan.toString
+              val naitveRows = df.collect()
+              val naitvePlan = df.queryExecution.executedPlan.toString
 
-              var success = QueryComparison.assertSameRows(sparkRows, cometRows, output = w)
+              var success = QueryComparison.assertSameRows(sparkRows, naitveRows, output = w)
 
-              // check that the plan contains Comet operators
-//              if (!cometPlan.contains("Comet")) {
+              // check that the plan contains naitve operators
+//              if (!naitvePlan.contains("naitve")) {
 //                success = false
-//                w.write("[ERROR] Comet did not accelerate any part of the plan\n")
+//                w.write("[ERROR] naitve did not accelerate any part of the plan\n")
 //              }
 
               QueryComparison.showSQL(w, sql)
 
               if (success) {
-                cometSuccessCount += 1
+                naitveSuccessCount += 1
               } else {
                 // show plans for failed queries
-                showPlans(w, sparkPlan, cometPlan)
-                cometFailureCount += 1
+                showPlans(w, sparkPlan, naitvePlan)
+                naitveFailureCount += 1
+                showResult(w, sparkRows, naitveRows)
               }
 
             } catch {
               case e: Throwable =>
-                // the query worked in Spark but failed in Comet, so this is likely a bug in Comet
-                cometFailureCount += 1
+                // the query worked in Spark but failed in naitve, so this is likely a bug in naitve
+                naitveFailureCount += 1
                 QueryComparison.showSQL(w, sql)
 
                 w.write("### Error Message\n")
@@ -128,11 +129,11 @@ object QueryRunner {
             w.flush()
 
           } catch {
-            case e: Exception =>
+            case e: Throwable =>
               // we expect many generated queries to be invalid
               invalidQueryCount += 1
               if (showFailedSparkQueries) {
-                QueryComparison.showSQL(w, sql)
+                //QueryComparison.showSQL(w, sql)
                 w.write(s"Query failed in Spark: ${e.getMessage}\n")
               }
           }
@@ -141,7 +142,7 @@ object QueryRunner {
       w.write("# Summary\n")
       w.write(
         s"Total queries: $queryCount; Invalid queries: $invalidQueryCount; " +
-          s"Comet failed: $cometFailureCount; Comet succeeded: $cometSuccessCount\n")
+          s"${nativeEngineConf.engineName} failed: $naitveFailureCount; ${nativeEngineConf.engineName} succeeded: $naitveSuccessCount\n")
 
     } finally {
       w.close()
@@ -153,18 +154,18 @@ object QueryRunner {
 object QueryComparison {
   def assertSameRows(
       sparkRows: Array[Row],
-      cometRows: Array[Row],
+      naitveRows: Array[Row],
       output: BufferedWriter,
       tolerance: Double = 0.000001): Boolean = {
-    if (sparkRows.length == cometRows.length) {
+    if (sparkRows.length == naitveRows.length) {
       var i = 0
       while (i < sparkRows.length) {
         val l = sparkRows(i)
-        val r = cometRows(i)
+        val r = naitveRows(i)
 
         // Check the schema is equal for first row only
         if (i == 0 && l.schema != r.schema) {
-          output.write("[ERROR] Spark produced different schema than Comet.\n")
+          output.write("[ERROR] Spark produced different schema than Naitve.\n")
 
           return false
         }
@@ -174,7 +175,7 @@ object QueryComparison {
           if (!same(l(j), r(j), tolerance)) {
             output.write(s"First difference at row $i:\n")
             output.write("Spark: `" + formatRow(l) + "`\n")
-            output.write("Comet: `" + formatRow(r) + "`\n")
+            output.write("Naitve: `" + formatRow(r) + "`\n")
             i = sparkRows.length
 
             return false
@@ -185,7 +186,7 @@ object QueryComparison {
     } else {
       output.write(
         s"[ERROR] Spark produced ${sparkRows.length} rows and " +
-          s"Comet produced ${cometRows.length} rows.\n")
+          s"Naitve produced ${naitveRows.length} rows.\n")
 
       return false
     }
@@ -254,17 +255,24 @@ object QueryComparison {
     w.write("```\n")
   }
 
-  def showPlans(w: BufferedWriter, sparkPlan: String, cometPlan: String): Unit = {
+  def showPlans(w: BufferedWriter, sparkPlan: String, naitvePlan: String): Unit = {
     w.write("### Spark Plan\n")
     w.write(s"```\n$sparkPlan\n```\n")
-    w.write("### Comet Plan\n")
-    w.write(s"```\n$cometPlan\n```\n")
+    w.write("### Naitve Plan\n")
+    w.write(s"```\n$naitvePlan\n```\n")
   }
 
-  def showSchema(w: BufferedWriter, sparkSchema: String, cometSchema: String): Unit = {
+  def showSchema(w: BufferedWriter, sparkSchema: String, naitveSchema: String): Unit = {
     w.write("### Spark Schema\n")
     w.write(s"```\n$sparkSchema\n```\n")
-    w.write("### Comet Schema\n")
-    w.write(s"```\n$cometSchema\n```\n")
+    w.write("### Naitve Schema\n")
+    w.write(s"```\n$naitveSchema\n```\n")
+  }
+  
+  def showResult(w: BufferedWriter, sparkRows: Array[Row], naitveRows: Array[Row]): Unit = {
+    w.write("### Spark Result\n")
+    w.write(s"```\n${format(sparkRows)}\n```\n")
+    w.write("### Naitve Result\n")
+    w.write(s"```\n${format(naitveRows)}\n```\n")
   }
 }

@@ -61,7 +61,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
     val numFiles: ScallopOption[Int] =
       opt[Int](required = true, descr = "Number of input files to use")
     val showFailedSparkQueries: ScallopOption[Boolean] =
-      opt[Boolean](required = false, descr = "Whether to show failed Spark queries")
+      opt[Boolean](required = false, descr = "Whether to show failed Spark queries", default = Some(true))
   }
   addSubcommand(runQueries)
   verify()
