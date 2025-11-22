@@ -16,7 +16,7 @@ class NativeEngineConf(engineType: NativeEngineType) {
         conf.setIfMissing("spark.auron.enable", "true")
           .setIfMissing("spark.sql.extensions", "org.apache.spark.sql.auron.AuronSparkSessionExtension")
           .setIfMissing("spark.shuffle.manager", "org.apache.spark.sql.execution.auron.shuffle.AuronShuffleManager")
-          .setIfMissing("spark.executor.memory", "4g")
+          .setIfMissing("spark.executor.memory", "3g")
           .setIfMissing("spark.memory.offHeap.enabled", "false")
       case NativeEngineType.COMET =>
         conf.setIfMissing("spark.comet.enabled", "true")

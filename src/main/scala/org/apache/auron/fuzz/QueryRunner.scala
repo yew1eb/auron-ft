@@ -70,7 +70,7 @@ object QueryRunner {
         .foreach(sql => {
           queryCount += 1
           try {
-            println(s"Running query: $sql")
+            println(s"Running query[${queryCount}]: $sql")
 
             // execute with Spark
             nativeEngineConf.disableNativeEngine(spark)
