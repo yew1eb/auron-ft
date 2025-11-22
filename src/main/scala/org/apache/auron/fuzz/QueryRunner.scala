@@ -133,7 +133,7 @@ object QueryRunner {
               // we expect many generated queries to be invalid
               invalidQueryCount += 1
               if (showFailedSparkQueries) {
-                //QueryComparison.showSQL(w, sql)
+                QueryComparison.showSQL(w, sql)
                 w.write(s"Query failed in Spark: ${e.getMessage}\n")
               }
           }
