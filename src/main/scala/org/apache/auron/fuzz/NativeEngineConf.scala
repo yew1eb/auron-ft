@@ -24,6 +24,7 @@ class NativeEngineConf(engineType: NativeEngineType) {
           .setIfMissing("spark.shuffle.manager", "org.apache.spark.sql.comet.execution.shuffle.CometShuffleManager")
           .setIfMissing("spark.comet.explainFallback.enabled", "true")
           .setIfMissing("spark.executor.memory", "1g")
+          .setIfMissing("spark.driver.memory", "2g")
           .setIfMissing("spark.memory.offHeap.enabled", "true")
           .setIfMissing("spark.memory.offHeap.size", "2g")
       case NativeEngineType.GLUTEN =>

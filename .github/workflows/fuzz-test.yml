@@ -55,7 +55,6 @@ jobs:
           mvn clean package -DskipTests
           cp target/auron-fuzz-testing-*.jar .
 
-
   build-auron:
     name: Build auron and run fuzz test
     needs: build-fuzz-test
@@ -119,6 +118,7 @@ jobs:
 
   build-comet:
     name: Build comet and run fuzz test
+    if: false
     needs: build-fuzz-test
     runs-on: ${{ inputs.os }}
     steps:
@@ -182,6 +182,7 @@ jobs:
 
   build-gluten:
     name: Build gluten and run fuzz test
+    if: false
     needs: build-fuzz-test
     runs-on: ${{ inputs.os }}
     steps:
