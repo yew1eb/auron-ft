@@ -19,6 +19,7 @@
 
 package org.apache.auron.fuzz
 
+import org.apache.auron.fuzz.QueryComparison.showPlans
 import org.apache.spark.sql.{Row, SparkSession}
 
 import java.io.{BufferedWriter, FileWriter, PrintWriter, StringWriter}
