@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: |
         FUZZ_TEST_JAR=$(ls auron-fuzz-testing-*.jar)
-        OPTS="--num-files=2 --num-rows=200 --num-columns=100"
+        OPTS="--num-files=2 --num-rows=200"
         if [[ "${{ inputs.data-exclude-negative-zero }}" == "true" ]]; then
           OPTS="$OPTS --exclude-negative-zero --generate-arrays --generate-structs --generate-maps "
         fi
