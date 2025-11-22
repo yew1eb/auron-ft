@@ -19,6 +19,9 @@
 
 package org.apache.auron.fuzz
 
+import org.apache.auron.fuzz.old.Main.createSparkSession
+import org.apache.auron.fuzz.old.NativeEngineConf
+import org.apache.auron.fuzz.testing.{DataGenOptions, ParquetGenerator, SchemaGenOptions}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.rogach.scallop.{ScallopConf, ScallopOption, Subcommand}
@@ -27,24 +30,38 @@ import scala.util.Random
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   object generateData extends Subcommand("data") {
-    val numFiles: ScallopOption[Int] = opt[Int](required = true)
-    val numRows: ScallopOption[Int] = opt[Int](required = true)
-    val randomSeed: ScallopOption[Long] = opt[Long](required = false)
-    val numColumns: ScallopOption[Int] = opt[Int](required = true)
-    val excludeNegativeZero: ScallopOption[Boolean] = opt[Boolean](required = false)
+    val numFiles: ScallopOption[Int] =
+      opt[Int](required = true, descr = "Number of files to generate")
+    val numRows: ScallopOption[Int] = opt[Int](required = true, descr = "Number of rows per file")
+    val randomSeed: ScallopOption[Long] =
+      opt[Long](required = false, descr = "Random seed to use")
+    val generateArrays: ScallopOption[Boolean] =
+      opt[Boolean](required = false, descr = "Whether to generate arrays")
+    val generateStructs: ScallopOption[Boolean] =
+      opt[Boolean](required = false, descr = "Whether to generate structs")
+    val generateMaps: ScallopOption[Boolean] =
+      opt[Boolean](required = false, descr = "Whether to generate maps")
+    val excludeNegativeZero: ScallopOption[Boolean] =
+      opt[Boolean](required = false, descr = "Whether to exclude negative zero")
   }
   addSubcommand(generateData)
   object generateQueries extends Subcommand("queries") {
-    val numFiles: ScallopOption[Int] = opt[Int](required = false)
-    val numQueries: ScallopOption[Int] = opt[Int](required = true)
-    val randomSeed: ScallopOption[Long] = opt[Long](required = false)
+    val numFiles: ScallopOption[Int] =
+      opt[Int](required = true, descr = "Number of input files to use")
+    val numQueries: ScallopOption[Int] =
+      opt[Int](required = true, descr = "Number of queries to generate")
+    val randomSeed: ScallopOption[Long] =
+      opt[Long](required = false, descr = "Random seed to use")
   }
   addSubcommand(generateQueries)
   object runQueries extends Subcommand("run") {
-    val filename: ScallopOption[String] = opt[String](required = true)
-    val nativeEngine: ScallopOption[String] = opt[String](required = true)
-    val numFiles: ScallopOption[Int] = opt[Int](required = false)
-    val showMatchingResults: ScallopOption[Boolean] = opt[Boolean](required = false)
+    val filename: ScallopOption[String] =
+      opt[String](required = true, descr = "File to write queries to")
+    val nativeEngine: ScallopOption[String] = opt[String](required = true, descr = "Native Engine")
+    val numFiles: ScallopOption[Int] =
+      opt[Int](required = true, descr = "Number of input files to use")
+    val showFailedSparkQueries: ScallopOption[Boolean] =
+      opt[Boolean](required = false, descr = "Whether to show failed Spark queries")
   }
   addSubcommand(runQueries)
   verify()
@@ -65,13 +82,24 @@ object Main {
           case Some(seed) => new Random(seed)
           case None => new Random()
         }
-        DataGen.generateRandomFiles(
-          r,
-          createSparkSession(),
-          numFiles = conf.generateData.numFiles(),
-          numRows = conf.generateData.numRows(),
-          numColumns = conf.generateData.numColumns(),
-          generateNegativeZero = !conf.generateData.excludeNegativeZero())
+        for (i <- 0 until conf.generateData.numFiles()) {
+          ParquetGenerator.makeParquetFile(
+            r,
+            createSparkSession(),
+            s"test$i.parquet",
+            numRows = conf.generateData.numRows(),
+            SchemaGenOptions(
+              generateArray = conf.generateData.generateArrays(),
+              generateStruct = conf.generateData.generateStructs(),
+              generateMap = conf.generateData.generateMaps(),
+              // create two columns of each primitive type so that they can be used in binary
+              // expressions such as `a + b` and `a <  b`
+              primitiveTypes = SchemaGenOptions.defaultPrimitiveTypes ++
+                SchemaGenOptions.defaultPrimitiveTypes),
+            DataGenOptions(
+              allowNull = true,
+              generateNegativeZero = !conf.generateData.excludeNegativeZero()))
+        }
       case Some(conf.generateQueries) =>
         val r = conf.generateQueries.randomSeed.toOption match {
           case Some(seed) => new Random(seed)
@@ -86,10 +114,9 @@ object Main {
         val nativeEngineConf = NativeEngineConf(conf.runQueries.nativeEngine())
         QueryRunner.runQueries(
           createSparkSession(nativeEngineConf.sparkConf),
-          nativeEngineConf,
           conf.runQueries.numFiles(),
           conf.runQueries.filename(),
-          conf.runQueries.showMatchingResults())
+          conf.runQueries.showFailedSparkQueries())
       case _ =>
         // scalastyle:off println
         println("Invalid subcommand")

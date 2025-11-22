@@ -17,13 +17,17 @@
  * under the License.
  */
 
-package org.apache.auron.fuzz
+package org.apache.auron.fuzz.old
 
 import scala.util.Random
 
 object Utils {
 
-  def randomChoice[T](list: Seq[T], r: Random): T = {
+  def randomInt(int: Int, r: Random = new Random()): Int = {
+    r.nextInt(int)
+  }
+
+  def randomChoice[T](list: Seq[T], r: Random = new Random()): T = {
     list(r.nextInt(list.length))
   }
 

@@ -1,7 +1,6 @@
-package org.apache.auron.fuzz
+package org.apache.auron.fuzz.old
 
-
-import org.apache.auron.fuzz.NativeEngineType.NativeEngineType
+import org.apache.auron.fuzz.old.NativeEngineType.NativeEngineType
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 

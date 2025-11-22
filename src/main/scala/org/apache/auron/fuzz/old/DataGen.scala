@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.auron.fuzz
+package org.apache.auron.fuzz.old
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
