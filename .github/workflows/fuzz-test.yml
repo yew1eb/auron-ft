@@ -50,7 +50,7 @@ jobs:
           key: auron-fuzz-testing-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
           enableCrossOsArchive: true
       - name: Build fuzz Test
-        if: steps.get-fuzz-test-cache.outputs.cache-hit != 'true'
+       # if: steps.get-fuzz-test-cache.outputs.cache-hit != 'true'
         run: |
           mvn clean package -DskipTests
           cp target/auron-fuzz-testing-*.jar .
