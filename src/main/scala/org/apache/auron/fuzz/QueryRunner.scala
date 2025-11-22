@@ -30,7 +30,8 @@ import scala.io.Source
 object QueryRunner {
 
   def createOutputMdFile(): BufferedWriter = {
-    val outputFilename = s"results-${System.currentTimeMillis()}.md"
+    //val outputFilename = s"results-${System.currentTimeMillis()}.md"
+    val outputFilename = s"results.md"
     // scalastyle:off println
     println(s"Writing results to $outputFilename")
     // scalastyle:on println

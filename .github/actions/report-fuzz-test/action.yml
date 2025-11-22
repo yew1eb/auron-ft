@@ -19,7 +19,7 @@ runs:
         echo "issue_title=$issue_title" >> $GITHUB_OUTPUT
         ls -lah
     - name: report result of fuzz test
-      if: ${{ hashFiles('results-*.md') != '' }}
+      if: ${{ hashFiles('results.md') != '' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
