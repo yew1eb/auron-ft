@@ -18,7 +18,7 @@
 # under the License.
 #
 # Usage: ./run.sh
-# Builds necessary JARs, generates data and queries, and runs fuzz tests for Comet Spark.
+# Builds necessary JARs, generates data and queries, and runs fuzz tests for Auron Spark.
 # Environment variables:
 #   SPARK_HOME - path to Spark installation
 #   SPARK_MASTER - Spark master URL (default: local[*])
@@ -31,34 +31,18 @@
 set -eux
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PARENT_DIR="${DIR}/.."
-MVN_CMD="${PARENT_DIR}/mvnw"
-SPARK_MASTER="${SPARK_MASTER:-local[*]}"
-SCALA_MAJOR_VERSION="${SCALA_MAJOR_VERSION:-2.12}"
-SPARK_MAJOR_VERSION="${SPARK_MAJOR_VERSION:-3.5}"
-PROFILES="-Pscala-${SCALA_MAJOR_VERSION},spark-${SPARK_MAJOR_VERSION}"
-PROJECT_VERSION=$("${MVN_CMD}" -f "${DIR}/pom.xml" -q help:evaluate -Dexpression=project.version -DforceStdout)
-COMET_SPARK_JAR="${PARENT_DIR}/spark/target/comet-spark${SPARK_MAJOR_VERSION}_${SCALA_MAJOR_VERSION}-${PROJECT_VERSION}.jar"
-COMET_FUZZ_JAR="${DIR}/target/comet-fuzz-spark${SPARK_MAJOR_VERSION}_${SCALA_MAJOR_VERSION}-${PROJECT_VERSION}-jar-with-dependencies.jar"
+SPARK_MASTER=local
+SPARK_HOME=/Users/yew1eb/workspaces/spark-3.5.7-bin-hadoop3
+AURON_FUZZ_JAR="${DIR}/target/auron-fuzz-testing-1.0-SNAPSHOT-jar-with-dependencies.jar"
 NUM_FILES="${NUM_FILES:-2}"
 NUM_ROWS="${NUM_ROWS:-200}"
 NUM_QUERIES="${NUM_QUERIES:-500}"
 
-if [ ! -f "${COMET_SPARK_JAR}" ]; then
-  echo "Building Comet Spark jar..."
-  pushd "${PARENT_DIR}"
-  PROFILES="${PROFILES}" make
-  popd
-else
-  echo "Building Fuzz testing jar..."
-  "${MVN_CMD}" -f "${DIR}/pom.xml" package -DskipTests "${PROFILES}"
-fi
-
 echo "Generating data..."
 "${SPARK_HOME}/bin/spark-submit" \
   --master "${SPARK_MASTER}" \
-  --class org.apache.comet.fuzz.Main \
-  "${COMET_FUZZ_JAR}" \
+  --class org.apache.auron.fuzz.Main \
+  "${AURON_FUZZ_JAR}" \
   data --num-files="${NUM_FILES}" --num-rows="${NUM_ROWS}" \
   --exclude-negative-zero \
   --generate-arrays --generate-structs --generate-maps
@@ -66,22 +50,23 @@ echo "Generating data..."
 echo "Generating queries..."
 "${SPARK_HOME}/bin/spark-submit" \
   --master "${SPARK_MASTER}" \
-  --class org.apache.comet.fuzz.Main \
-  "${COMET_FUZZ_JAR}" \
+  --class org.apache.auron.fuzz.Main \
+  "${AURON_FUZZ_JAR}" \
   queries --num-files="${NUM_FILES}" --num-queries="${NUM_QUERIES}"
 
+
 echo "Running fuzz tests..."
+#  --jars "${AURON_SPARK_JAR}" \
+#  --conf spark.driver.extraClassPath="${AURON_SPARK_JAR}" \
+#  --conf spark.executor.extraClassPath="${AURON_SPARK_JAR}" \
+
 "${SPARK_HOME}/bin/spark-submit" \
   --master "${SPARK_MASTER}" \
-  --conf spark.memory.offHeap.enabled=true \
-  --conf spark.memory.offHeap.size=16G \
-  --conf spark.plugins=org.apache.spark.CometPlugin \
-  --conf spark.comet.enabled=true \
-  --conf spark.shuffle.manager=org.apache.spark.sql.comet.execution.shuffle.CometShuffleManager \
-  --conf spark.comet.exec.shuffle.enabled=true \
-  --jars "${COMET_SPARK_JAR}" \
-  --conf spark.driver.extraClassPath="${COMET_SPARK_JAR}" \
-  --conf spark.executor.extraClassPath="${COMET_SPARK_JAR}" \
-  --class org.apache.comet.fuzz.Main \
-  "${COMET_FUZZ_JAR}" \
-  run --num-files="${NUM_FILES}" --filename="queries.sql"
+  --conf spark.memory.offHeap.enabled=false \
+  --conf spark.memory.offHeap.size=4g \
+  --conf spark.sql.extensions=org.apache.spark.sql.auron.AuronSparkSessionExtension \
+  --conf spark.auron.enable=true \
+  --conf spark.shuffle.manager=org.apache.spark.sql.execution.auron.shuffle.AuronShuffleManager \
+  --class org.apache.auron.fuzz.Main \
+  "${AURON_FUZZ_JAR}" \
+  run --native-engine=auron --num-files="${NUM_FILES}" --filename="queries.sql"

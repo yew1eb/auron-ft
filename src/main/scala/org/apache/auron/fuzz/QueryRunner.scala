@@ -99,17 +99,18 @@ object QueryRunner {
                 naitveSuccessCount += 1
               } else {
                 // show plans for failed queries
-                QueryComparison.showSQL(w, sql)
+                QueryComparison.showSQL(w, sql, sqlNum = queryCount)
                 showPlans(w, sparkPlan, naitvePlan)
                 naitveFailureCount += 1
                 showResult(w, sparkRows, naitveRows)
+                w.write(s"```\n ------ sqlNum=$queryCount end ------ \\n\\n")
               }
 
             } catch {
               case e: Throwable =>
                 // the query worked in Spark but failed in naitve, so this is likely a bug in naitve
                 naitveFailureCount += 1
-                QueryComparison.showSQL(w, sql)
+                QueryComparison.showSQL(w, sql,  sqlNum = queryCount)
 
                 w.write("### Error Message\n")
                 w.write("```\n")
@@ -123,7 +124,7 @@ object QueryRunner {
                 e.printStackTrace(p)
                 p.close()
                 w.write(s"${sw.toString}\n")
-                w.write("```\n")
+                w.write(s"```\n ------ sqlNum=$queryCount end ------ \\n\\n")
             }
 
             // flush after every query so that results are saved in the event of the driver crashing
@@ -134,8 +135,8 @@ object QueryRunner {
               // we expect many generated queries to be invalid
               invalidQueryCount += 1
               if (showFailedSparkQueries) {
-                QueryComparison.showSQL(w, sql)
-                w.write(s"Query failed in Spark: ${e.getMessage}\n")
+                QueryComparison.showSQL(w, sql, sqlNum =  queryCount)
+                w.write(s"Query failed in Spark: ${e.getMessage}\n ------ sqlNum=$queryCount end ------ \n\n")
               }
           }
         })
@@ -227,6 +228,7 @@ object QueryComparison {
       case null => "NULL"
       case v: mutable.WrappedArray[_] => s"[${v.map(format).mkString(",")}]"
       case v: Array[Byte] => s"[${v.mkString(",")}]"
+      case v: Array[Row] => s"[${v.map(format).mkString(",")}]"
       case r: Row => formatRow(r)
       case other => other.toString
     }
@@ -236,8 +238,8 @@ object QueryComparison {
     row.toSeq.map(format).mkString(",")
   }
 
-  def showSQL(w: BufferedWriter, sql: String, maxLength: Int = 120): Unit = {
-    w.write("## SQL\n")
+  def showSQL(w: BufferedWriter, sql: String, maxLength: Int = 120, sqlNum: Int): Unit = {
+    w.write(s"## SQL $sqlNum\n")
     w.write("```\n")
     val words = sql.split(" ")
     val currentLine = new StringBuilder
