@@ -93,12 +93,13 @@ object QueryRunner {
 //                w.write("[ERROR] naitve did not accelerate any part of the plan\n")
 //              }
 
-              QueryComparison.showSQL(w, sql)
+              //QueryComparison.showSQL(w, sql)
 
               if (success) {
                 naitveSuccessCount += 1
               } else {
                 // show plans for failed queries
+                QueryComparison.showSQL(w, sql)
                 showPlans(w, sparkPlan, naitvePlan)
                 naitveFailureCount += 1
                 showResult(w, sparkRows, naitveRows)
