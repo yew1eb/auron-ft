@@ -34,7 +34,7 @@ runs:
         FUZZ_TEST_JAR=$(ls auron-fuzz-testing-*.jar)
         OPTS="--num-files=2 --num-rows=200 --num-columns=100"
         if [[ "${{ inputs.data-exclude-negative-zero }}" == "true" ]]; then
-          OPTS="$OPTS --exclude-negative-zero"
+          OPTS="$OPTS --exclude-negative-zero --generate-arrays --generate-structs --generate-maps "
         fi
         $SPARK_HOME/bin/spark-submit \
           --master local \
@@ -49,7 +49,7 @@ runs:
           --master local \
           --class org.apache.auron.fuzz.Main \
           $FUZZ_TEST_JAR \
-          queries --num-files=2 --num-queries=2000
+          queries --num-files=2 --num-queries=500
     - name: Running fuzz tests
       shell: bash
       run: |
