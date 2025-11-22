@@ -20,6 +20,7 @@
 package org.apache.auron.fuzz
 
 import org.apache.auron.fuzz.QueryComparison.showPlans
+import org.apache.auron.fuzz.old.NativeEngineConf
 import org.apache.spark.sql.{Row, SparkSession}
 
 import java.io.{BufferedWriter, FileWriter, PrintWriter, StringWriter}
@@ -39,6 +40,7 @@ object QueryRunner {
 
   def runQueries(
       spark: SparkSession,
+      nativeEngineConf: NativeEngineConf,
       numFiles: Int,
       filename: String,
       showFailedSparkQueries: Boolean = false): Unit = {
@@ -67,15 +69,17 @@ object QueryRunner {
         .foreach(sql => {
           queryCount += 1
           try {
+            println(s"Running query: $sql")
+
             // execute with Spark
-            spark.conf.set("spark.comet.enabled", "false")
+            nativeEngineConf.disableNativeEngine(spark)
             val df = spark.sql(sql)
             val sparkRows = df.collect()
             val sparkPlan = df.queryExecution.executedPlan.toString
 
-            // execute with Comet
+            // execute with native engion
             try {
-              spark.conf.set("spark.comet.enabled", "true")
+              nativeEngineConf.enableNativeEngine(spark)
               val df = spark.sql(sql)
               val cometRows = df.collect()
               val cometPlan = df.queryExecution.executedPlan.toString
@@ -83,10 +87,10 @@ object QueryRunner {
               var success = QueryComparison.assertSameRows(sparkRows, cometRows, output = w)
 
               // check that the plan contains Comet operators
-              if (!cometPlan.contains("Comet")) {
-                success = false
-                w.write("[ERROR] Comet did not accelerate any part of the plan\n")
-              }
+//              if (!cometPlan.contains("Comet")) {
+//                success = false
+//                w.write("[ERROR] Comet did not accelerate any part of the plan\n")
+//              }
 
               QueryComparison.showSQL(w, sql)
 
@@ -99,14 +103,17 @@ object QueryRunner {
               }
 
             } catch {
-              case e: Exception =>
+              case e: Throwable =>
                 // the query worked in Spark but failed in Comet, so this is likely a bug in Comet
                 cometFailureCount += 1
                 QueryComparison.showSQL(w, sql)
-                w.write("### Spark Plan\n")
-                w.write(s"```\n$sparkPlan\n```\n")
 
-                w.write(s"[ERROR] Query failed in Comet: ${e.getMessage}:\n")
+                w.write("### Error Message\n")
+                w.write("```\n")
+                w.write(s"[ERROR] Query failed in native engine ${nativeEngineConf.engineName}: ${e.getMessage}:\n")
+                w.write("```\n")
+
+                w.write("### Error StackTrace\n")
                 w.write("```\n")
                 val sw = new StringWriter()
                 val p = new PrintWriter(sw)

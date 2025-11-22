@@ -114,6 +114,7 @@ object Main {
         val nativeEngineConf = NativeEngineConf(conf.runQueries.nativeEngine())
         QueryRunner.runQueries(
           createSparkSession(nativeEngineConf.sparkConf),
+          nativeEngineConf,
           conf.runQueries.numFiles(),
           conf.runQueries.filename(),
           conf.runQueries.showFailedSparkQueries())
