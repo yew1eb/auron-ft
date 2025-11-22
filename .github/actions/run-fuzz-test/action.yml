@@ -19,7 +19,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: auron-fuzz-testing-*.jar
-        key: auron-fuzz-testing-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+        key: auron-fuzz-testing-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}-${{ github.sha }}
         restore-keys:
           auron-fuzz-testing-lib-
         enableCrossOsArchive: true

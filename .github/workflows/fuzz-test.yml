@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: auron-fuzz-testing-*.jar
-          key: auron-fuzz-testing-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+          key: auron-fuzz-testing-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}-${{ github.sha }}
           enableCrossOsArchive: true
       - name: Build fuzz Test
         if: steps.get-fuzz-test-cache.outputs.cache-hit != 'true'
